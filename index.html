@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Football Analyzer</title>
+
+<style>
+*{box-sizing:border-box}
+
+body{
+  margin:0;
+  background:#07111f;
+  color:#fff;
+  font-family:Arial,Helvetica,sans-serif;
+}
+
+header{
+  padding:22px 16px;
+  background:#0d1b2d;
+  border-bottom:1px solid #233852;
+}
+
+h1{
+  margin:0;
+  font-size:25px;
+}
+
+h1 span{
+  color:#35d08b;
+}
+
+.subtitle{
+  color:#9db0c5;
+  margin-top:6px;
+  font-size:13px;
+}
+
+main{
+  max-width:1000px;
+  margin:auto;
+  padding:16px;
+}
+
+.search{
+  width:100%;
+  padding:14px;
+  border-radius:12px;
+  border:1px solid #29415e;
+  background:#0d1b2d;
+  color:white;
+  font-size:15px;
+  outline:none;
+}
+
+button{
+  margin-top:10px;
+  padding:11px 15px;
+  border:0;
+  border-radius:10px;
+  background:#35d08b;
+  color:#061b12;
+  font-weight:bold;
+}
+
+.status{
+  margin:15px 0;
+  padding:12px;
+  background:#0d1b2d;
+  border:1px solid #233852;
+  border-radius:12px;
+  color:#a9bbcf;
+  font-size:13px;
+}
+
+.matches{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+  gap:12px;
+}
+
+.match{
+  background:#0d1b2d;
+  border:1px solid #233852;
+  border-radius:14px;
+  padding:15px;
+}
+
+.league{
+  color:#91a7bd;
+  font-size:12px;
+  margin-bottom:10px;
+}
+
+.teams{
+  font-size:17px;
+  font-weight:bold;
+  line-height:1.6;
+}
+
+.time{
+  color:#9db0c5;
+  font-size:13px;
+  margin-top:8px;
+}
+
+.empty{
+  text-align:center;
+  color:#91a7bd;
+  padding:30px 10px;
+}
+
+@media(max-width:600px){
+  main{padding:12px}
+  h1{font-size:22px}
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <h1>⚽ Football <span>Analyzer</span></h1>
+  <div class="subtitle">
+    Corners · Cartons · Tirs · Tirs cadrés · Fautes
+  </div>
+</header>
+
+<main>
+
+  <input
+    id="search"
+    class="search"
+    type="text"
+    placeholder="Rechercher une équipe ou une compétition..."
+  >
+
+  <button onclick="charger()">↻ Actualiser</button>
+
+  <div id="status" class="status">
+    Préparation de Football Analyzer...
+  </div>
+
+  <div id="matches" class="matches">
+    <div class="empty">
+      Chargement des matchs...
+    </div>
+  </div>
+
+</main>
+
+<script>
+
+let matchs = [];
+
+function afficher(){
+  const recherche =
+    document.getElementById("search").value
+    .toLowerCase()
+    .trim();
+
+  const resultat = matchs.filter(m => {
+
+    const texte =
+      `${m.home || ""} ${m.away || ""} ${m.league || ""}`
+      .toLowerCase();
+
+    return !recherche || texte.includes(recherche);
+  });
+
+  const zone = document.getElementById("matches");
+
+  if(!resultat.length){
+    zone.innerHTML =
+      '<div class="empty">Aucun match disponible.</div>';
+    return;
+  }
+
+  zone.innerHTML = resultat.map(m => `
+
+    <div class="match">
+
+      <div class="league">
+        ${m.league || "Compétition"}
+      </div>
+
+      <div class="teams">
+        ${m.home || "Équipe domicile"}
+        <br>
+        vs
+        <br>
+        ${m.away || "Équipe extérieur"}
+      </div>
+
+      <div class="time">
+        ${m.time || ""}
+      </div>
+
+      <button onclick="analyser(${m.id})">
+        Analyser
+      </button>
+
+    </div>
+
+  `).join("");
+}
+
+
+async function charger(){
+
+  const status =
+    document.getElementById("status");
+
+  status.textContent =
+    "Recherche des matchs du jour...";
+
+  try{
+
+    /*
+      Plus tard, ce fichier recevra
+      automatiquement data.json depuis
+      notre serveur GitHub.
+    */
+
+    const reponse =
+      await fetch("data.json?"+Date.now());
+
+    if(!reponse.ok){
+      throw new Error("Données pas encore disponibles");
+    }
+
+    const donnees =
+      await reponse.json();
+
+    matchs =
+      donnees.matches || [];
+
+    afficher();
+
+    status.textContent =
+      `${matchs.length} match(s) disponible(s).`;
+
+  }catch(erreur){
+
+    matchs = [];
+
+    document.getElementById("matches").innerHTML = `
+      <div class="empty">
+        Les données football sont en cours de préparation.
+      </div>
+    `;
+
+    status.textContent =
+      "Connexion aux données en préparation...";
+  }
+}
+
+
+function analyser(id){
+
+  const match =
+    matchs.find(m => String(m.id) === String(id));
+
+  if(!match)return;
+
+  alert(
+    "Analyse de " +
+    match.home +
+    " - " +
+    match.away +
+    "\n\n" +
+    "La récupération des 5 derniers matchs, " +
+    "des 2 H2H et des 5 statistiques sera ajoutée."
+  );
+}
+
+
+document
+  .getElementById("search")
+  .addEventListener("input", afficher);
+
+charger();
+
+</script>
+
+</body>
+</html>
